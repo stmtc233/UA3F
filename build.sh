@@ -3,6 +3,7 @@
 # Usage examples:
 #   ./build.sh                 # default: linux all + win/darwin 64/arm64
 #   ./build.sh linux/amd64 windows/arm64
+#   ./build.sh linux/aarch64_cortex-a53
 # --------------------------------
 
 set -e
@@ -13,7 +14,9 @@ target=main.go
 dist=./dist
 release_dir=./bin
 
-LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8"
+# --- 主要修改点 ---
+# 在 LINUX_ARCHS 变量中增加了 aarch64_cortex-a53
+LINUX_ARCHS="amd64 arm arm64 mipsle mips64 riscv64 386 mipsle-softfloat mipsle-hardfloat armv7 armv8 aarch64_cortex-a53"
 
 # default build target（Linux + Windows + macOS）
 DEFAULT_TARGETS=""
@@ -56,6 +59,15 @@ for target_item in $TARGET_LIST; do
         alias_name=$project_name-$release_version-${goos}-arm64
         if [ ! -f "../dist/bin/$alias_name" ]; then
             echo ">>> Building $goos/arm64 (for armv8 alias)"
+            CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
+            cp "$alias_name" ../dist/bin/
+        fi
+        cp "../dist/bin/$alias_name" "$obj_name"
+        ;;
+    aarch64_cortex-a53)
+        alias_name=$project_name-$release_version-${goos}-arm64
+        if [ ! -f "../dist/bin/$alias_name" ]; then
+            echo ">>> Building $goos/arm64 (for aarch64_cortex-a53 alias)"
             CGO_ENABLED=0 GOOS=$goos GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$alias_name" "$target"
             cp "$alias_name" ../dist/bin/
         fi
