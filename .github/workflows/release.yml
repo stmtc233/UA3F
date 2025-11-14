@@ -1,9 +1,14 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # 改为手动触发 (workflow_dispatch)
+  workflow_dispatch:
+    # 添加一个输入框，方便在手动运行时指定版本号
+    inputs:
+      version:
+        description: '要发布的版本标签 (例如: v1.8.3)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -34,18 +39,26 @@ jobs:
           chmod +x build.sh
           ./build.sh
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      # 这个步骤不再需要，因为版本号会从手动输入中获取
+      # - name: Get version from tag
+      #  id: get_version
+      #  run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
+        # 确认是手动触发的事件
+        if: github.event_name == 'workflow_dispatch'
         with:
-          name: UA3F ${{ steps.get_version.outputs.VERSION }}
+          # Release 的名称，使用手动输入的版本号
+          name: UA3F ${{ github.event.inputs.version }}
+          # 创建一个与版本号同名的 Git 标签
+          tag_name: ${{ github.event.inputs.version }}
+          # 上传 dist 目录下的所有文件
           files: dist/*
-          draft: true
+          # 改为 false，直接发布，而不是创建草稿
+          draft: false
           prerelease: false
+          # 自动生成发布说明
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
